@@ -5,5 +5,5 @@ src=$(find  src/*.cpp)
 echo "Files to compile: "$src
 clang++ -fsycl -fsycl-targets=nvptx64-nvidia-cuda -lglut -lGLU -lGL  $src
 if [ $? -eq 0 ]; then
-    ./a.out gpu 10 0.1
+    ./a.out 
 fi

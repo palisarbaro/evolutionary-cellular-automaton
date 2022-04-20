@@ -1,22 +1,22 @@
 #include "model.h"
-Model::Model(int h, int w):h(h),w(w)
+
+const int view_radius = 1;
+const int visible_cells_count = (view_radius*2+1)*(view_radius*2+1);
+Model::Model(int h, int w, int typeNum):h(h),w(w), typeNum(typeNum)
 {
     auto device = sycl::platform::get_platforms()[0].get_devices()[0];
     queue = sycl::queue(device);
     curr = sycl::malloc_shared<elType>(h*w, queue);
     next = sycl::malloc_shared<elType>(h*w, queue);
-
-     for(int x=0;x<w;x++){
-        for(int y=0;y<h;y++){
-            curr[x+w*y] = rand()/static_cast<float>(RAND_MAX)>0.5?1:0;
-        }
-    }
+    network = Network(&queue,w*h,visible_cells_count,std::vector<LayerDefinition>({{49,SoftMax},{18,SoftMax},{2,SoftMax}}));
+    reset();
 }
 
 Model::~Model()
 {
     sycl::free(curr,queue);
     sycl::free(next,queue);
+    network.deinit();
 }
 
 void Model::step(int iterations)
@@ -25,30 +25,26 @@ void Model::step(int iterations)
     auto next = this->next;
     int w = this->w;
     int h = this->h;
+    Network network = this->network;
     for (int iteration = 0; iteration < iterations; iteration++) {
-		sycl::event e = queue.parallel_for(sycl::range<2>(w,h), [=](sycl::id<2> item) {
-            int x = item.get(0);
-            int y = item.get(1);
-            int count = 0;
-            for(int i=-1;i<2;i++){
-                for(int j=-1;j<2;j++){
-                    int X = (x+i+w)%w;
-                    int Y = (y+j+h)%h;
-                    count += curr[X+w*Y];
+		sycl::event e = queue.parallel_for(sycl::range<2>(h,w), [=](sycl::item<2> item) {
+            int x = item.get_id(1);
+            int y = item.get_id(0);
+            int element = item.get_linear_id();
+            float input[visible_cells_count];
+            float middle1[49];
+            float middle2[18];
+            float output[2];
+            for(int _x=-view_radius;_x<view_radius+1;_x++){
+                for(int _y=-view_radius;_y<view_radius+1;_y++){
+                    int X = (x+_x+w)%w;
+                    int Y = (y+_y+h)%h;
+                    input[_x+view_radius+(view_radius*2+1)*(_y+view_radius)] = curr[X+w*Y];
                 }
             }
-            int res = 0;
-            if(curr[x+w*y]==0){
-                if(count==3){
-                    res=1;
-                }
-            }
-            else{
-                if(count==3 || count==2){
-                    res = 1;
-                }
-            }
-			next[x+w*y]=res;
+            float* layers_data[4] = {input,middle1, middle2, output};
+            network.calc(element,layers_data);
+			next[x+w*y]=output[0]>0.5?1:0;
 		});
 		e.wait_and_throw();
 
@@ -60,4 +56,13 @@ void Model::step(int iterations)
     this->curr = curr;
     this->next = next;
     
+}
+
+void Model::reset()
+{
+    for(int x=0;x<w;x++){
+        for(int y=0;y<h;y++){
+            curr[x+w*y] = rand()/static_cast<float>(RAND_MAX)>0.9?1:0;
+        }
+    }
 }
