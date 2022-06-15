@@ -5,26 +5,33 @@
 #include<cctype>
 Model* UI::model = nullptr;
 bool UI::showFPS = false;
+bool UI::stopped = false;
 int UI::targetMS = 100;
+bool UI::showBots = true;
+bool UI::showAutomate = true;
 std::chrono::steady_clock::time_point timeFPS = std::chrono::steady_clock::now();
 void STEP(int v){
+    if(UI::stopped){
+        return;
+    }
+
     auto t = timeFPS;
     timeFPS = std::chrono::steady_clock::now();
     if(UI::showFPS){
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeFPS - t).count();
         std::cout<< ms << " ms; "<<1000./ms<<" FPS" << std::endl;
     }
-    UI::model->step(1);
+    UI::model->step();
     display();
     glutTimerFunc(UI::targetMS, STEP,1);
 }
 void init(int argc, char* argv[], float cellSize){
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE);
-    glutInitWindowSize(UI::model->w*cellSize, UI::model->h*cellSize);
+    glutInitWindowSize(UI::model->f.w*cellSize, UI::model->f.h*cellSize);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Hello world!");
-    gluOrtho2D(0,UI::model->w,0,UI::model->h);
+    gluOrtho2D(0,UI::model->f.w,0,UI::model->f.h);
     glutDisplayFunc(display);
     glutKeyboardFunc(keyboard);
     glutTimerFunc(1000, STEP,1);
@@ -42,7 +49,10 @@ void setColor(elType val){
         break;
     case 1:
         glColor3f(0,1,0);
-        break;  
+        break; 
+    case 2:
+        glColor3f(0,1,1);
+        break;
     default:
         throw -111;
     }
@@ -51,9 +61,21 @@ void display()
 {
     float d = 1;
 	glClear(GL_COLOR_BUFFER_BIT);
-    for(int x=0;x<UI::model->w;x++){
-        for(int y=0;y<UI::model->h;y++){
-            setColor(UI::model->curr[x+UI::model->w*y]);
+    for(int x=0;x<UI::model->f.w;x++){
+        for(int y=0;y<UI::model->f.h;y++){
+            int element = x+UI::model->f.w*y;
+            glColor3f(0,0,0);
+            if(UI::showAutomate){
+                setColor(UI::model->f.curr[element]);
+            }
+            if(UI::showBots){
+                if(UI::model->f.curr_bots[element].x!=-1){
+                    float i = static_cast<float>(UI::model->f.curr_bots[element].x)/UI::model->f.w;
+                    float j = static_cast<float>(UI::model->f.curr_bots[element].y)/UI::model->f.h;
+                    //std::cout<<i<<" "<<j<<std::endl;
+                    glColor3f(1,i,j);
+                }
+            }
             glBegin(GL_QUADS);
                 glVertex2f(x,y);
                 glVertex2f(x+d,y);
@@ -74,7 +96,34 @@ void keyboard(unsigned char key,int x,int y)
     }
     if(key=='r'){
         UI::model->reset();
-        display();
+    }
+    if(key==' '){
+        UI::stopped=!UI::stopped;
+        if(!UI::stopped){
+            glutTimerFunc(UI::targetMS, STEP,1);
+        }
+    }
+    if(key=='a'){
+        UI::model->averageWeights();
+    }
+    if(key=='m'){
+        UI::model->f.automate_network.mutate(0.05);
+    }
+    if(key=='p'){
+        for(int i=0;i<1000;i++){
+            uint64_t hist = UI::model->f.history[i];
+            for(int j=0;j<64;j++){
+                std::cout<<hist%2;
+                hist=hist>>1;
+            }
+            std::cout<<std::endl<<UI::model->f.time<<std::endl;
+        }
+    }
+    if(key=='b'){
+        UI::showBots = !UI::showBots;
+    }
+    if(key=='c'){
+        UI::showAutomate = !UI::showAutomate;
     }
     if(key>='0' && key<='9'){ //fps
         int mss[10] = {0,20,50,100,200,300,500,1000,2000,3000};
@@ -83,4 +132,5 @@ void keyboard(unsigned char key,int x,int y)
         std::cout<<"target fps: "<< mss[d] << " ms; "<<1000./mss[d]<<" FPS" << std::endl;
 
     }
+    display();
 }

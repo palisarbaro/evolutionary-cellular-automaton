@@ -1,14 +1,16 @@
 #include "layer.h"
-Layer::Layer(int elements_count, int in_size, int out_size, ActivationFunction activation, sycl::queue* queue):elements_count(elements_count),in_size(in_size),out_size(out_size),activation(activation),queue(queue)
+Layer::Layer(int elements_count, int in_size, int out_size, ActivationFunction activation, sycl::queue* queue, bool equality):elements_count(elements_count),in_size(in_size),out_size(out_size),activation(activation),queue(queue)
 {
     initialized=true;
-    weights = sycl::malloc_shared<float>(elements_count*in_size*out_size, *queue);
+    weights = sycl::malloc_shared<float>(elements_count*(in_size+1)*out_size, *queue);
     
-    for(int i=0;i<in_size;i++){
+    for(int i=0;i<in_size+1;i++){
         for(int j=0;j<out_size;j++){
-            
+            float v = rand()/static_cast<float>(RAND_MAX)*4-2;
             for(int x=0;x<elements_count;x++){
-                float v = rand()/static_cast<float>(RAND_MAX)*4-2;
+                if(!equality){
+                    v = rand()/static_cast<float>(RAND_MAX)*4-2;
+                }
                 at(x,i,j)=v;
             }
         }
@@ -20,7 +22,7 @@ Layer::Layer()
     
 }
 
-inline float& Layer::at(int element,int i, int j) const
+float& Layer::at(int element,int i, int j) const
 {
     return weights[element+elements_count*(i+in_size*j)];
 }
@@ -55,7 +57,7 @@ void Layer::calc(int element, float* input, float* output) const
         for(int i=0;i<in_size;i++){
             res += input[i]*at(element,i,j);
         }
-        output[j] = res; 
+        output[j] = res+at(element,in_size,j); 
     }
     switch (activation)
     {

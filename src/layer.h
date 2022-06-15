@@ -14,9 +14,9 @@ public:
     bool initialized=false;
 
 
-    Layer(int elements_count, int in_size, int out_size, ActivationFunction activation, sycl::queue* queue);
+    Layer(int elements_count, int in_size, int out_size, ActivationFunction activation, sycl::queue* queue, bool equality=false);
     Layer();
-    float& at(int element,int i, int j) const;
+    SYCL_EXTERNAL float& at(int element,int i, int j) const;
     SYCL_EXTERNAL void calc(int element, float* input, float* output) const;
     void deinit();
 };

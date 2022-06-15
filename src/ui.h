@@ -5,7 +5,10 @@ class UI{
   public:
     static Model* model;
     static bool showFPS;
+    static bool stopped;
     static int targetMS;
+    static bool showBots;
+    static bool showAutomate;
 };
 void init(int argc, char* argv[],float cellSize);
 void loop();
