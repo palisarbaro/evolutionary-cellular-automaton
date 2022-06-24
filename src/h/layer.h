@@ -2,7 +2,8 @@
 #define __LAYER_H__
 #include<CL/sycl.hpp>
 enum ActivationFunction{
-    SoftMax
+    SoftMax,
+    Tanh01
 };
 class Layer{
 public:
@@ -19,6 +20,7 @@ public:
     SYCL_EXTERNAL float& at(int element,int i, int j) const;
     SYCL_EXTERNAL void calc(int element, float* input, float* output) const;
     void deinit();
+    void printStatistic();
 };
 
 #endif // __LAYER_H__

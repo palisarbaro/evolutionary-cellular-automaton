@@ -1,4 +1,4 @@
-#include "layer.h"
+#include "h/layer.h"
 Layer::Layer(int elements_count, int in_size, int out_size, ActivationFunction activation, sycl::queue* queue, bool equality):elements_count(elements_count),in_size(in_size),out_size(out_size),activation(activation),queue(queue)
 {
     initialized=true;
@@ -64,6 +64,11 @@ void Layer::calc(int element, float* input, float* output) const
     case ActivationFunction::SoftMax:
         softmax(output,out_size);
         break;
+
+    case ActivationFunction::Tanh01:
+        for(int i=0;i<out_size;i++){
+            output[i] = (sycl::tanh(output[i])+1)/2;
+        }
     
     default:
         break;
@@ -75,4 +80,26 @@ void Layer::deinit()
     if(initialized){
         sycl::free(weights,*queue);
     }   
+}
+
+void Layer::printStatistic()
+{
+    float mean=0;
+    float min=MAXFLOAT;
+    float max=-MAXFLOAT;
+    float m2=0;
+    int len = (in_size+1)*out_size;
+    for(int w=0;w<len;w++){
+        mean+=weights[w];
+        m2+=weights[w]*weights[w];
+        if(min>weights[w]) min = weights[w];
+        if(max<weights[w]) max = weights[w];
+    }
+    mean/=len;
+    m2/=len;
+    float D = m2-mean*mean;
+    std::cout<<"mean: "<<mean<<std::endl;
+    std::cout<<"min: "<<min<<std::endl;
+    std::cout<<"max: "<<max<<std::endl;
+    std::cout<<"D: "<<D<<std::endl;
 }

@@ -1,5 +1,5 @@
 #include <GL/glut.h>
-#include "ui.h"
+#include "h/ui.h"
 #include<chrono>
 #include<iostream>
 #include<cctype>
@@ -42,20 +42,7 @@ void loop()
     glutMainLoop();
 }
 void setColor(elType val){
-    switch (val)
-    {
-    case 0:
-        glColor3f(0,0,0);
-        break;
-    case 1:
-        glColor3f(0,1,0);
-        break; 
-    case 2:
-        glColor3f(0,1,1);
-        break;
-    default:
-        throw -111;
-    }
+    glColor3f(val.arr[0],val.arr[1],val.arr[2]);
 }
 void display()
 {
@@ -65,17 +52,7 @@ void display()
         for(int y=0;y<UI::model->f.h;y++){
             int element = x+UI::model->f.w*y;
             glColor3f(0,0,0);
-            if(UI::showAutomate){
-                setColor(UI::model->f.curr[element]);
-            }
-            if(UI::showBots){
-                if(UI::model->f.curr_bots[element].x!=-1){
-                    float i = static_cast<float>(UI::model->f.curr_bots[element].x)/UI::model->f.w;
-                    float j = static_cast<float>(UI::model->f.curr_bots[element].y)/UI::model->f.h;
-                    //std::cout<<i<<" "<<j<<std::endl;
-                    glColor3f(1,i,j);
-                }
-            }
+            setColor(UI::model->f.curr[element]);
             glBegin(GL_QUADS);
                 glVertex2f(x,y);
                 glVertex2f(x+d,y);
@@ -103,22 +80,18 @@ void keyboard(unsigned char key,int x,int y)
             glutTimerFunc(UI::targetMS, STEP,1);
         }
     }
-    if(key=='a'){
-        UI::model->averageWeights();
-    }
+
     if(key=='m'){
         UI::model->f.automate_network.mutate(0.05);
-    }
-    if(key=='p'){
-        for(int i=0;i<1000;i++){
-            uint64_t hist = UI::model->f.history[i];
-            for(int j=0;j<64;j++){
-                std::cout<<hist%2;
-                hist=hist>>1;
-            }
-            std::cout<<std::endl<<UI::model->f.time<<std::endl;
+        if(glutGetModifiers()&GLUT_ACTIVE_SHIFT){
+            UI::model->f.automate_network.randomize();
         }
     }
+
+    if(key=='s'){
+        UI::model->f.automate_network.printStatistics();
+    }
+
     if(key=='b'){
         UI::showBots = !UI::showBots;
     }
