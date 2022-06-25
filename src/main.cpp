@@ -1,10 +1,11 @@
 #include <cstdlib>
 #include "h/ui.h"
-#include "h/model.h"
+#include "h/model.hpp"
 
 int main(int argc, char* argv[]) {
+	std::cout<<std::is_trivially_copyable<Fields<20>>::value<<std::endl;
 	std::srand(std::time(nullptr));
-	Model m(200,200);
+	Model<20> m(200,200);
 	UI::model = &m;
 	init(argc,argv,5);
 	loop();

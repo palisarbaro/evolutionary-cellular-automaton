@@ -3,7 +3,7 @@
 #include<chrono>
 #include<iostream>
 #include<cctype>
-Model* UI::model = nullptr;
+Model<UI::dim>* UI::model = nullptr;
 bool UI::showFPS = false;
 bool UI::stopped = false;
 int UI::targetMS = 100;
@@ -41,7 +41,7 @@ void loop()
 {
     glutMainLoop();
 }
-void setColor(elType val){
+void setColor(vec<UI::dim> val){
     glColor3f(val.arr[0],val.arr[1],val.arr[2]);
 }
 void display()
@@ -72,7 +72,7 @@ void keyboard(unsigned char key,int x,int y)
         UI::showFPS = !UI::showFPS;
     }
     if(key=='r'){
-        UI::model->reset();
+        UI::model->f.curr.reset();
     }
     if(key==' '){
         UI::stopped=!UI::stopped;
@@ -92,12 +92,10 @@ void keyboard(unsigned char key,int x,int y)
         UI::model->f.automate_network.printStatistics();
     }
 
-    if(key=='b'){
-        UI::showBots = !UI::showBots;
+    if(key=='l'){
+        UI::model->f.curr.readImg("img.txt");
     }
-    if(key=='c'){
-        UI::showAutomate = !UI::showAutomate;
-    }
+
     if(key>='0' && key<='9'){ //fps
         int mss[10] = {0,20,50,100,200,300,500,1000,2000,3000};
         int d = key-'0';

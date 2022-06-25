@@ -4,7 +4,7 @@
 template <int size>
 struct vec{
     float arr[size];
-    SYCL_EXTERNAL float operator[](int n) const{
+    SYCL_EXTERNAL float& operator[](int n) {
         return arr[n];
     }
     SYCL_EXTERNAL vec(float* a){

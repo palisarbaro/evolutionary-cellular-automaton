@@ -1,9 +1,10 @@
 #ifndef __UI_H__
 #define __UI_H__
-#include "model.h"
+#include "model.hpp"
 class UI{
   public:
-    static Model* model;
+    static const int dim = 20;
+    static Model<dim>* model;
     static bool showFPS;
     static bool stopped;
     static int targetMS;
